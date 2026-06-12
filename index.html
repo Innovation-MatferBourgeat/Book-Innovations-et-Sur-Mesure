@@ -9,7 +9,7 @@
 :root{--bg:#060604;--bg2:#0e0e0c;--surface:#161614;--border:rgba(255,255,255,0.07);--gold:#C9A84C;--gold-l:#E8D49A;--blue:#5B8FBF;--blue-l:#8FB8E0;--red:#B85C38;--red-l:#D4896A;--green:#8FAF7A;--green-l:#AECF9A;--text:#F0EDE6;--muted:rgba(240,237,232,0.42);--subtle:rgba(240,237,232,0.22);--font-d:'Cormorant Garamond',Georgia,serif;--font-u:'Jost','Helvetica Neue',sans-serif;--ease:cubic-bezier(0.4,0,0.2,1);--footer-h:56px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font-u)}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .35s var(--ease),opacity .35s var(--ease)}
+.screen{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;transition:transform .35s var(--ease),opacity .35s var(--ease)}
 .screen.hidden{pointer-events:none;opacity:0;transform:translateX(100%)}
 .screen.hidden-back{pointer-events:none;opacity:0;transform:translateX(-30%)}
 #loading{background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
@@ -68,9 +68,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sub-pill.active{color:var(--pill-color,var(--gold-l))}
 .sub-bar{position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--gold);transition:left .3s var(--ease),width .3s var(--ease),background .3s;pointer-events:none;z-index:2}
 .sv-main{flex:1;overflow:hidden;position:relative;display:flex}
-.sv-outer{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column;width:100%;contain:layout}
-.sv-track{display:flex;flex:1;transition:transform .35s var(--ease);will-change:transform}
-.sv-slide{flex:0 0 100vw;width:100vw;max-width:100%;height:calc(100% - 20px);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;touch-action:pan-y}
+.sv-outer{flex:1;overflow:hidden;position:relative;width:100%}
+.sv-track{position:absolute;top:0;left:0;bottom:20px;display:flex;transition:transform .35s var(--ease);will-change:transform}
+.sv-slide{flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;touch-action:pan-y}
 .sv-slide::-webkit-scrollbar{display:none}
 .sv-img-block{flex-shrink:0;background:#000;display:flex;flex-direction:column}
 .sv-img-wrap{width:100%;cursor:zoom-in;display:flex;align-items:center;justify-content:center;background:#000}
@@ -408,6 +408,12 @@ function openSec(key) {
   document.getElementById('home').classList.add('hidden-back');
   sv.classList.remove('hidden');
   initSwipe();
+  // Measure after paint so dimensions are correct
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      setSlideSizes();
+    });
+  });
 }
 
 function orderedSubs() {
@@ -491,6 +497,25 @@ function buildSlides() {
     dot.className = 'sv-dot' + (si === 0 ? ' active' : '');
     dotbar.appendChild(dot);
   }
+  // Set explicit pixel widths so slides fill the container correctly
+  setSlideSizes();
+}
+
+function setSlideSizes() {
+  var outer = document.getElementById('svo');
+  var track = document.getElementById('svtr');
+  if (!outer || !track) return;
+  var outerW = outer.offsetWidth || window.innerWidth;
+  var outerH = (outer.offsetHeight || window.innerHeight) - 20;
+  track.style.width = (outerW * allSubs.length) + 'px';
+  var panels = track.querySelectorAll('.sv-slide');
+  for (var pi = 0; pi < panels.length; pi++) {
+    panels[pi].style.width = outerW + 'px';
+    panels[pi].style.height = outerH + 'px';
+  }
+  // Reapply current slide position without animation
+  track.style.transition = 'none';
+  track.style.transform = 'translateX(-' + (curSlide * outerW) + 'px)';
 }
 
 function goSlide(idx, animate) {
@@ -498,8 +523,9 @@ function goSlide(idx, animate) {
   if (idx >= allSubs.length) idx = allSubs.length - 1;
   curSlide = idx;
   var track = document.getElementById('svtr');
+  var ow = document.getElementById('svo').offsetWidth || window.innerWidth;
   track.style.transition = animate ? 'transform .35s var(--ease)' : 'none';
-  track.style.transform = 'translateX(-' + (idx * 100) + '%)';
+  track.style.transform = 'translateX(-' + (idx * ow) + 'px)';
   var panels = track.querySelectorAll('.sv-slide');
   if (panels[idx]) panels[idx].scrollTop = 0;
   var pills = document.querySelectorAll('.sub-pill');
@@ -631,6 +657,9 @@ async function init() {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('home').classList.remove('hidden');
     setTimeout(function() { updateTabBar('i'); }, 50);
+  window.addEventListener('resize', function() {
+    if (curSec) setSlideSizes();
+  });
   } catch(err) {
     var le = document.getElementById('le');
     le.textContent = 'Erreur : ' + err.message;
