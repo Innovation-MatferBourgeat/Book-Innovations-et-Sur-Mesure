@@ -310,34 +310,34 @@ function decodePath(path) {
 
 // ─── FILENAME HELPERS ─────────────────────────────────────────────────────────
 function stripOrder(name) {
-  let n = name; try { n = decodeURIComponent(name); } catch(e) {}
-  return n.replace(/^\d+[_ ]?/, '').replace(/_/g, ' ').trim();
+  var n = name;
+  try { n = decodeURIComponent(name); } catch(e) {}
+  return n.replace(/^[0-9]+[_ ]?/, '').replace(/_/g, ' ').trim();
 }
 function imgTitle(filename) {
-  let name = filename; try { name = decodeURIComponent(filename); } catch(e) {}
-  const base = name.replace(/\.[^.]+$/, '');
-  const noOrder = base.replace(/^\d+[_ ]?/, '');
+  var f = filename;
+  try { f = decodeURIComponent(filename); } catch(e) {}
+  var base = f.replace(/[.][^.]+$/, '');
+  var noOrder = base.replace(/^[0-9]+[_ ]?/, '');
   return noOrder.replace(/_/g, ' ').trim();
-} catch(e) {}
-  const base = name.replace(/\.[^.]+$/, '');         // remove extension
-  const noOrder = base.replace(/^\d+[_ ]?/, '');     // remove leading number + separator (space or _)
-  return noOrder.replace(/_/g, ' ').trim();           // normalize underscores to spaces
 }
+
 function sortKey(name) {
-  let n = name; try { n = decodeURIComponent(name); } catch(e) {}
-  const m = n.match(/^(\d+)/);
-  return m ? parseInt(m[1]) : 999;
-} catch(e) {}
-  const m = n.match(/^(\d+)/);
+  var n = name;
+  try { n = decodeURIComponent(name); } catch(e) {}
+  var m = n.match(/^([0-9]+)/);
   return m ? parseInt(m[1]) : 999;
 }
 function isCover(name) {
-  return name.toLowerCase() === 'couverture' || name.toLowerCase() === 'cover';
+  var n = name;
+  try { n = decodeURIComponent(name); } catch(e) {}
+  var l = n.toLowerCase();
+  return l === 'couverture' || l === 'cover';
 }
 function isImage(name) {
-  // decode in case name is percent-encoded
-  let n = name; try { n = decodeURIComponent(name); } catch(e) {}
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(n);
+  var n = name;
+  try { n = decodeURIComponent(name); } catch(e) {}
+  return /[.](jpg|jpeg|png|gif|webp)$/i.test(n);
 }
 
 // ─── BUILD DATA FROM TREE ─────────────────────────────────────────────────────
