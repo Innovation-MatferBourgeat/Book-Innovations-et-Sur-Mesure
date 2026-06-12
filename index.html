@@ -43,10 +43,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .prod-card{cursor:pointer;position:relative;border-radius:2px;overflow:hidden;background:var(--surface);border:.5px solid var(--border);aspect-ratio:4/3}
 .prod-card img{width:100%;height:100%;object-fit:cover;display:block}
 .prod-card-ph{width:100%;height:100%;background:#fff;display:block}
-.prod-card-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(6,6,4,.92) 0%,transparent 100%);padding:20px 10px 8px}
-.prod-card-tag{font:300 7px/1 var(--font-u);letter-spacing:.25em;text-transform:uppercase;color:var(--gold);opacity:.8;margin-bottom:4px}
-.blue-card .prod-card-tag{color:var(--blue-l);opacity:.9}
-.prod-card-name{font:300 14px/1.2 var(--font-d);color:var(--text)}
+.prod-card-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(6,6,4,.95) 0%,rgba(6,6,4,.4) 60%,transparent 100%);padding:28px 10px 10px}
+
+
+.prod-card-name{font:300 16px/1.2 var(--font-d);color:var(--text);letter-spacing:.01em}
 .prod-card.hs{display:none}
 .home-footer{flex-shrink:0;height:var(--footer-h);background:var(--bg2);border-top:.5px solid var(--border);display:flex;align-items:center;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
 .lang-toggle{display:flex;border:.5px solid var(--border);border-radius:2px;overflow:hidden}
@@ -59,7 +59,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sv-hd-row{display:flex;align-items:center;width:100%;gap:10px}
 .sv-back{width:32px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.65;flex-shrink:0}
 .sv-back svg{width:18px;height:18px;stroke:var(--gold)}
-.sv-title{font:300 15px/1.1 var(--font-d);color:var(--text);flex:1;text-align:center}
+.sv-title{font:300 10px/1 var(--font-u);letter-spacing:.25em;text-transform:uppercase;color:var(--text);flex:1;text-align:center}
 .sv-hd-sp{width:32px;flex-shrink:0}
 .sub-wrap{flex-shrink:0;background:var(--bg2);border-bottom:.5px solid var(--border);position:relative}
 .sub-nav{display:flex;justify-content:center;overflow-x:auto;scrollbar-width:none;padding:0 14px;position:relative}
@@ -75,8 +75,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sv-img-block{flex-shrink:0;background:#000;display:flex;flex-direction:column;margin-top:3px}
 .sv-img-wrap{width:100%;cursor:zoom-in;display:flex;align-items:center;justify-content:center;background:#000}
 .sv-img-wrap img{width:100%;display:block;object-fit:contain;max-height:70vh}
-.sv-caption{flex-shrink:0;padding:3px 16px 11px;background:var(--bg2)}
-.sv-cap-title{font:300 9px/1.2 var(--font-u);letter-spacing:.22em;text-transform:uppercase;text-align:center}
+.sv-caption{flex-shrink:0;padding:2px 16px 11px;background:var(--bg2);margin-top:2px}
+.sv-cap-title{font:300 15px/1.25 var(--font-d);text-align:center}
 .sv-arrow{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:64px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;background:rgba(6,6,4,.5)}
 .sv-arrow.left{left:0;border-radius:0 2px 2px 0}.sv-arrow.right{right:0;border-radius:2px 0 0 2px}
 .sv-arrow svg{width:17px;height:17px;stroke:var(--gold)}
@@ -208,6 +208,8 @@ function numKey(s) {
 }
 function isCoverDir(s) {
   var d = dec(s).toLowerCase().trim();
+  // Strip leading number + separator (e.g. "00_Couverture" -> "couverture")
+  d = d.replace(/^[0-9]+[_ ]?/, '');
   return d === 'couverture' || d === 'cover' || d.indexOf('couverture') === 0 || d.indexOf('cover') === 0;
 }
 function isImg(s) {
@@ -255,8 +257,9 @@ function buildCat(tree) {
       };
     }
     var sec = secs[key];
+    console.log('[MB] path='+node.path+' subDir='+subDir+' isCover='+isCoverDir(subDir));
     if (isCoverDir(subDir)) {
-      if (!sec.cover) sec.cover = rawUrl(node.path);
+      if (!sec.cover) { sec.cover = rawUrl(node.path); console.log('[MB] COVER set for '+secName); }
     } else {
       if (!sec.subs[subName]) {
         sec.subs[subName] = [];
@@ -323,8 +326,23 @@ function renderCard(sec, gid) {
   card.className = 'prod-card' + (sec.isSM ? ' blue-card' : '');
   card.dataset.kw = (sec.secName + ' ' + sec.tabGrp).toLowerCase();
   card.dataset.sk = sec.key;
-  var img = sec.cover ? '<img src="' + sec.cover + '" loading="lazy" alt="">' : '<div class="prod-card-ph"></div>';
-  card.innerHTML = img + '<div class="prod-card-label"><div class="prod-card-tag">' + sec.tabGrp + '</div><div class="prod-card-name">' + sec.secName + '</div></div>';
+  console.log('[MB] renderCard', sec.secName, 'cover:', sec.cover);
+  if (sec.cover) {
+    var imgEl = document.createElement('img');
+    imgEl.src = sec.cover;
+    imgEl.loading = 'lazy';
+    imgEl.alt = '';
+    imgEl.onerror = function() { console.log('[MB] IMG FAILED:', sec.cover); this.parentNode.innerHTML = '<div class="prod-card-ph"></div>' + this.parentNode.innerHTML; this.remove(); };
+    card.appendChild(imgEl);
+  } else {
+    var ph = document.createElement('div');
+    ph.className = 'prod-card-ph';
+    card.appendChild(ph);
+  }
+  var lbl = document.createElement('div');
+  lbl.className = 'prod-card-label';
+  lbl.innerHTML = '<div class="prod-card-name">' + sec.secName + '</div>';
+  card.appendChild(lbl);
   card.addEventListener('click', function(sk) { return function() { openSec(sk); }; }(sec.key));
   grid.appendChild(card);
 }
@@ -658,6 +676,7 @@ async function init() {
       if (lr.ok) LINKS = await lr.json();
     } catch(e2) {}
     SECTIONS = buildCat(data.tree);
+    SECTIONS.forEach(function(s) { console.log('[MB] Section:', s.secName, '| cover:', s.cover ? 'YES' : 'NULL', '| subs:', Object.keys(s.subs)); });
     if (SECTIONS.length === 0) throw new Error('Aucune image trouvée dans ' + IMG_ROOT + '/');
     renderHome();
     document.getElementById('loading').classList.add('hidden');
