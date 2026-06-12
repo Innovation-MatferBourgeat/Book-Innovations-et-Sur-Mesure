@@ -85,7 +85,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 /* ── SECTION VIEW ── */
 #section-view{background:var(--bg)}
-.sv-header{flex-shrink:0;background:var(--bg);border-bottom:.5px solid var(--border);padding:max(12px,env(safe-area-inset-top)) 14px 10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.sv-header{flex-shrink:0;background:var(--bg);border-bottom:.5px solid var(--border);padding:max(10px,env(safe-area-inset-top)) 14px 7px;display:flex;flex-direction:column;align-items:center;gap:5px}
 .sv-header-logo{height:36px;object-fit:contain;cursor:pointer;opacity:.6;transition:opacity .2s}
 .sv-header-logo:active{opacity:.9}
 .sv-header-row{display:flex;align-items:center;width:100%;gap:10px}
@@ -101,18 +101,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sub-pill.active{color:var(--pill-color,var(--gold-l))}
 .sub-indicator{position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--gold);transition:left .3s var(--ease),width .3s var(--ease),background .3s;pointer-events:none;z-index:2}
 .sv-main{flex:1;overflow:hidden;position:relative;display:flex}
-.sv-slides-outer{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
-.sv-slides-track{display:flex;flex:1;transition:transform .35s var(--ease);overflow:hidden}
-.sv-slide{flex:0 0 100%;height:calc(100% - 20px);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;touch-action:pan-y}
+.sv-slides-outer{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column;width:100%}
+.sv-slides-track{display:flex;flex:1;min-width:100%;transition:transform .35s var(--ease)}
+.sv-slide{flex:0 0 100%;width:100%;min-width:100%;height:calc(100% - 20px);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;touch-action:pan-y}
 .sv-slide::-webkit-scrollbar{display:none}
-.sv-img-block{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:2px 0;background:#000}
+.sv-img-block{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:0;background:#000}
 .sv-img-wrap{width:100%;display:flex;align-items:center;justify-content:center;cursor:zoom-in}
-.sv-img-real{width:100%;aspect-ratio:4/3;object-fit:contain;display:block;background:#111}
+.sv-img-real{width:100%;display:block;object-fit:contain}
 .sv-img-placeholder{display:block;background:#fff;aspect-ratio:4/3;width:100%;object-fit:contain}
-.sv-caption{flex-shrink:0;padding:7px 16px 10px;border-top:.5px solid var(--border);background:var(--bg2)}
-.sv-caption-title{font:300 16px/1.25 var(--font-d);color:var(--text);text-align:center}
+.sv-caption{flex-shrink:0;padding:3px 16px 8px;background:var(--bg2)}
+.sv-caption-title{font:300 15px/1.2 var(--font-d);color:var(--text);text-align:center}
 .sv-caption-desc{font:300 12px/1.6 var(--font-u);color:var(--muted);margin-top:6px;text-align:center}
-.sv-img-sep{flex-shrink:0;height:.5px;background:var(--border);margin:0}
+.sv-img-sep{flex-shrink:0;height:.5px;background:var(--border);margin:0;display:none}
 .sv-arrow{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:64px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;background:rgba(6,6,4,.5);transition:opacity .2s}
 .sv-arrow.left{left:0;border-radius:0 2px 2px 0}
 .sv-arrow.right{right:0;border-radius:2px 0 0 2px}
@@ -135,12 +135,12 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 @media(orientation:landscape){
   .sv-header{padding-top:max(6px,env(safe-area-inset-top));padding-bottom:6px;gap:4px}
   .sv-header-logo{height:26px}
-  .sv-slide{flex-direction:row;height:100%}
-  .sv-img-block{flex:1;height:100%;padding:4px 0}
-  .sv-caption{flex:0 0 220px;border-top:none;border-left:.5px solid var(--border);display:flex;flex-direction:column;justify-content:center;overflow-y:auto}
+  .sv-slide{flex-direction:column}
   .sv-dot-bar{display:none}
   .sv-footer{height:42px}
   .sub-pill{padding:8px 12px 7px}
+  .prod-grid{grid-template-columns:repeat(4,1fr)}
+  .sec-group{margin-top:14px}
 }
 
 /* ── LIGHTBOX ── */
@@ -298,34 +298,46 @@ async function ghTree() {
 }
 
 function rawUrl(path) {
-  return `${RAW_BASE}/${encodeURIPath(path)}`;
+  // GitHub git/trees API returns raw UTF-8 paths
+  // encodeURIComponent each segment to build valid URL
+  const encoded = path.split('/').map(s => encodeURIComponent(s)).join('/');
+  return `${RAW_BASE}/${encoded}`;
 }
-function encodeURIPath(p) {
-  return p.split('/').map(s => encodeURIComponent(s)).join('/');
+function decodePath(path) {
+  // Decode percent-encoded path from API (if any) before parsing
+  try { return decodeURIComponent(path); } catch(e) { return path; }
 }
 
 // ─── FILENAME HELPERS ─────────────────────────────────────────────────────────
 function stripOrder(name) {
-  // "01_Pain_points" → "Pain points"
-  // "Chauffe-siphons" → "Chauffe-siphons" (no leading number)
-  return name.replace(/^\d+_/, '').replace(/_/g, ' ');
+  let n = name; try { n = decodeURIComponent(name); } catch(e) {}
+  return n.replace(/^\d+[_ ]?/, '').replace(/_/g, ' ').trim();
 }
 function imgTitle(filename) {
-  // "01_Nécessité_de_maintenir….jpg" → "Nécessité de maintenir…"
-  // "01.jpg" → "" (no title)
-  const base = filename.replace(/\.[^.]+$/, ''); // remove ext
-  const noOrder = base.replace(/^\d+_?/, '');    // remove leading number+underscore
+  let name = filename; try { name = decodeURIComponent(filename); } catch(e) {}
+  const base = name.replace(/\.[^.]+$/, '');
+  const noOrder = base.replace(/^\d+[_ ]?/, '');
   return noOrder.replace(/_/g, ' ').trim();
+} catch(e) {}
+  const base = name.replace(/\.[^.]+$/, '');         // remove extension
+  const noOrder = base.replace(/^\d+[_ ]?/, '');     // remove leading number + separator (space or _)
+  return noOrder.replace(/_/g, ' ').trim();           // normalize underscores to spaces
 }
 function sortKey(name) {
-  const m = name.match(/^(\d+)/);
+  let n = name; try { n = decodeURIComponent(name); } catch(e) {}
+  const m = n.match(/^(\d+)/);
+  return m ? parseInt(m[1]) : 999;
+} catch(e) {}
+  const m = n.match(/^(\d+)/);
   return m ? parseInt(m[1]) : 999;
 }
 function isCover(name) {
   return name.toLowerCase() === 'couverture' || name.toLowerCase() === 'cover';
 }
 function isImage(name) {
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+  // decode in case name is percent-encoded
+  let n = name; try { n = decodeURIComponent(name); } catch(e) {}
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(n);
 }
 
 // ─── BUILD DATA FROM TREE ─────────────────────────────────────────────────────
@@ -345,79 +357,61 @@ function isImage(name) {
 //         01_Formes/
 
 function buildCatalogue(tree) {
-  // Filter only blobs under IMAGES_ROOT
-  const files = tree.filter(n => n.type === 'blob' && n.path.startsWith(IMAGES_ROOT + '/') && isImage(n.path.split('/').pop()));
-
-  // Parse each file path into structured data
-  const sections = {}; // key = section path → section obj
+  const files = tree.filter(n => {
+    if (n.type !== 'blob') return false;
+    const decoded = n.path.split('/').map(s => { try { return decodeURIComponent(s); } catch(e) { return s; } }).join('/');
+    return decoded.startsWith(IMAGES_ROOT + '/') && isImage(decoded.split('/').pop());
+  });
+  console.log('[MB] Files found in Images/:', files.length);
+  files.forEach(f => console.log('[MB] file:', f.path));
+  const sections = {};
 
   for (const f of files) {
-    const parts = f.path.split('/');
-    // parts[0] = Images
-    // parts[1] = 01_Innovations or 02_Sur_Mesure
-    // parts[2] = 01_Petit_Materiel (tab group) — for SM this may be category
-    // parts[3] = 01_Chauffe-siphons (section)
-    // parts[4] = Couverture or 01_Pain_points (subsection or couverture)
-    // parts[5] = image filename (may not exist if image directly in section folder)
+    // Decode path in case GitHub API returns percent-encoded segments
+    const rawPath = f.path;
+    const decodedPath = rawPath.split('/').map(s => { try { return decodeURIComponent(s); } catch(e) { return s; } }).join('/');
+    const parts = decodedPath.split('/');
+    // Minimum: Images / topGroup / tabGroup / sectionName / subFolder / imgFile = 6 parts
+    if (parts.length < 6) { console.log('[MB] SKIP (depth<6):', f.path); continue; }
 
-    if (parts.length < 4) continue;
+    // parts[0] = "Images"
+    // parts[1] = "01_Innovations" or "02_Sur_Mesure"
+    // parts[2] = tab group ("01_Petit Matériel", "Moules"…)
+    // parts[3] = section name ("01_Chauffe-siphons"…)
+    // parts[4] = subsection folder ("Couverture", "01_Pain_points"…)
+    // parts[5] = image filename
 
-    const topDir   = stripOrder(parts[1]);  // "Innovations" or "Sur Mesure"
-    const isSM     = SM_CATEGORIES.some(c => parts[1].replace(/^\d+_/,'').replace(/_/g,' ').toLowerCase() === c.toLowerCase());
+    const isSM = SM_CATEGORIES.some(c =>
+      parts[1].replace(/^\d+[_\s]/,'').replace(/_/g,' ').toLowerCase() === c.toLowerCase()
+    );
 
-    let tabGroup, sectionName, subName, imgFile;
+    const tabGroup   = stripOrder(parts[2]);
+    const sectionName = stripOrder(parts[3]);
+    const subFolder  = parts[4];
+    const subName    = stripOrder(subFolder);
+    const imgFile    = parts[5];
 
-    if (isSM) {
-      // SM: Images/02_Sur_Mesure/Moules/01_Flexipan/Couverture/img.jpg
-      // or: Images/02_Sur_Mesure/Moules/01_Flexipan/01_Subsection/img.jpg
-      if (parts.length < 6) continue;
-      tabGroup    = stripOrder(parts[2]); // "Moules"
-      sectionName = stripOrder(parts[3]); // "Flexipan"
-      subName     = stripOrder(parts[4]); // "Couverture" or "Pain points"
-      imgFile     = parts[5];
-    } else {
-      // Innov: Images/01_Innovations/01_Petit_Materiel/01_Chauffe-siphons/Couverture/img.jpg
-      if (parts.length < 7) {
-        // Maybe: Images/01_Innovations/01_Petit_Materiel/01_Chauffe-siphons/01_Sub/img.jpg
-        if (parts.length === 6) {
-          tabGroup    = stripOrder(parts[2]);
-          sectionName = stripOrder(parts[3]);
-          subName     = stripOrder(parts[4]);
-          imgFile     = parts[5];
-        } else continue;
-      } else {
-        tabGroup    = stripOrder(parts[2]);
-        sectionName = stripOrder(parts[3]);
-        subName     = stripOrder(parts[4]);
-        imgFile     = parts[5];
-      }
-    }
-
-    if (!imgFile || !isImage(imgFile)) continue;
+    if (!isImage(imgFile)) continue;
 
     const secKey = (isSM ? 'sm:' : 'innov:') + tabGroup + '/' + sectionName;
 
     if (!sections[secKey]) {
       sections[secKey] = {
         key: secKey, isSM, tabGroup, sectionName,
-        tabGroupOrder: sortKey(parts[isSM ? 2 : 2]),
-        sectionOrder:  sortKey(parts[isSM ? 3 : 3]),
-        cover: null,
-        subsections: {},
-        subOrder: {}
+        tabGroupOrder: sortKey(parts[2]),
+        sectionOrder:  sortKey(parts[3]),
+        cover: null, subsections: {}, subOrder: {}
       };
     }
 
     const sec = sections[secKey];
 
     if (isCover(subName)) {
-      // Use first cover image found
       if (!sec.cover) sec.cover = rawUrl(f.path);
     } else {
       if (!sec.subsections[subName]) {
-        const subSortPart = isSM ? parts[4] : parts[4];
         sec.subsections[subName] = [];
-        sec.subOrder[subName] = sortKey(subSortPart);
+        sec.subOrder[subName] = sortKey(subFolder);
       }
       sec.subsections[subName].push({ path: f.path, file: imgFile });
     }
@@ -438,6 +432,8 @@ function buildCatalogue(tree) {
     }
   }
 
+  console.log('[MB] Sections built:', Object.keys(sections));
+  Object.values(sections).forEach(s => console.log('[MB] Section', s.sectionName, '→ subs:', Object.keys(s.subsections)));
   return Object.values(sections).sort((a, b) => {
     if (a.isSM !== b.isSM) return a.isSM ? 1 : -1;
     if (a.tabGroup !== b.tabGroup) return a.tabGroupOrder - b.tabGroupOrder;
