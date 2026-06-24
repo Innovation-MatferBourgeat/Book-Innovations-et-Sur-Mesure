@@ -46,7 +46,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .catalog::-webkit-scrollbar{display:none}
 .tab-panel{display:none}.tab-panel.active{display:block}
 .sec-group{margin-top:20px}
-.sec-group-title{font:300 12px/1 var(--font-u);letter-spacing:.38em;text-transform:uppercase;opacity:.65;margin-bottom:12px;padding-left:2px;color:var(--gold)}
+.sec-group-title{font-family:var(--font-u);font-weight:300;font-size:12px;line-height:1;letter-spacing:.38em;text-transform:uppercase;opacity:.65;margin-bottom:12px;padding-left:2px;color:var(--gold)}
 .sec-group.blue .sec-group-title{color:var(--blue)}
 .prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 2px}
 .prod-card{cursor:pointer;position:relative;border-radius:2px;overflow:hidden;background:var(--surface);border:.5px solid var(--border);aspect-ratio:4/3}
@@ -461,23 +461,6 @@ function openSec(key) {
   buildSubNav();
   buildSlides();
   goSlide(0, false);
-  // VR CTA
-  var vrWrap = document.getElementById('vr-cta-wrap');
-  if (!vrWrap) {
-    vrWrap = document.createElement('div');
-    vrWrap.id = 'vr-cta-wrap';
-    vrWrap.style.cssText = 'display:flex;justify-content:center;padding:0 0 6px';
-    document.getElementById('fca').parentNode.insertBefore(vrWrap, document.getElementById('fca'));
-  }
-  vrWrap.innerHTML = '';
-  if (curSec && curSec.vrUrl) {
-    var cta = document.createElement('a');
-    cta.className = 'vr-cta';
-    cta.href = '#';
-    cta.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg><span class="vr-cta-text">Visite 360°</span>';
-    cta.addEventListener('click', function(e) { e.preventDefault(); vrOpen(curSec.vrUrl); });
-    vrWrap.appendChild(cta);
-  }
   document.getElementById('home').classList.add('hidden-back');
   sv.classList.remove('hidden');
   initSwipe();
@@ -569,6 +552,40 @@ function buildSlides() {
     var dot = document.createElement('div');
     dot.className = 'sv-dot' + (si === 0 ? ' active' : '');
     dotbar.appendChild(dot);
+  }
+  // Add VR panel as last subsection if vrUrl exists
+  if (curSec.vrUrl) {
+    var vrIdx = allSubs.length;
+    allSubs.push('Visite 360°');
+    var col = getSubColor(curSec, vrIdx);
+    var vrPanel = document.createElement('div');
+    vrPanel.className = 'sv-slide';
+    vrPanel.style.cssText = 'display:flex;align-items:center;justify-content:center;flex-direction:column;gap:24px;background:var(--bg)';
+    var vrCta = document.createElement('a');
+    vrCta.className = 'vr-cta';
+    vrCta.href = '#';
+    vrCta.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg><span class="vr-cta-text">Visite 360°</span>';
+    vrCta.addEventListener('click', function(url) { return function(e) { e.preventDefault(); vrOpen(url); }; }(curSec.vrUrl));
+    vrPanel.appendChild(vrCta);
+    var vrLbl = document.createElement('div');
+    vrLbl.style.cssText = 'font:300 9px/1 var(--font-u);letter-spacing:.25em;text-transform:uppercase;color:var(--muted)';
+    vrLbl.textContent = 'Appuyez pour lancer la visite';
+    vrPanel.appendChild(vrLbl);
+    track.appendChild(vrPanel);
+    // Add pill
+    var vrPill = document.createElement('div');
+    vrPill.className = 'sub-pill';
+    vrPill.textContent = 'Visite 360°';
+    vrPill.dataset.si = vrIdx;
+    vrPill.dataset.cb = col.b;
+    vrPill.dataset.cl = col.l;
+    vrPill.style.setProperty('--pill-color', col.l);
+    vrPill.addEventListener('click', function(i) { return function() { goSlide(i, true); }; }(vrIdx));
+    document.getElementById('sn').appendChild(vrPill);
+    // Add dot
+    var vrDot = document.createElement('div');
+    vrDot.className = 'sv-dot';
+    dotbar.appendChild(vrDot);
   }
   // Set explicit pixel widths so slides fill the container correctly
   setSlideSizes();
