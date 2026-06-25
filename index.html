@@ -71,7 +71,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sv-title{font:300 10px/1 var(--font-u);letter-spacing:.25em;text-transform:uppercase;color:var(--text);flex:1;text-align:center}
 .sv-hd-sp{width:32px;flex-shrink:0}
 .sub-wrap{flex-shrink:0;background:var(--bg2);border-bottom:.5px solid var(--border);position:relative}
-.sub-nav{display:flex;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:0 14px;position:relative}
+.sub-nav{display:flex;overflow-x:auto;scrollbar-width:none;padding:0 14px}
 .sub-nav::-webkit-scrollbar{display:none}
 .sub-pill{font:300 9px/1 var(--font-u);letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:10px 14px 9px;white-space:nowrap;cursor:pointer;transition:color .25s;flex-shrink:0}
 .sub-pill.active{color:var(--pill-color,var(--gold-l))}
@@ -164,7 +164,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
   </div>
   <div class="sub-wrap">
-    <div class="sub-nav" id="sn"><div class="sub-bar" id="sb"></div></div>
+    <div class="sub-nav" id="sn"></div><div class="sub-bar" id="sb"></div>
   </div>
   <div class="sv-main">
     <div class="sv-outer" id="svo">
@@ -510,15 +510,23 @@ function buildSubNav() {
     pill.addEventListener('click', function(idx) { return function() { goSlide(idx, true); }; }(j));
     nav.appendChild(pill);
   }
-  setTimeout(function() { updateSubBar(0); }, 10);
+  // Center pills when they fit, scroll from left when they overflow
+  setTimeout(function() {
+    var nav = document.getElementById('sn');
+    nav.style.justifyContent = nav.scrollWidth <= nav.clientWidth ? 'center' : 'flex-start';
+    updateSubBar(0);
+  }, 10);
 }
 
 function updateSubBar(idx) {
   var nav = document.getElementById('sn');
+  var wrap = document.querySelector('.sub-wrap');
   var bar = document.getElementById('sb');
   var pill = nav.querySelector('[data-si="' + idx + '"]');
-  if (!pill || !bar) return;
-  bar.style.left = pill.offsetLeft + 'px';
+  if (!pill || !bar || !wrap) return;
+  var pr = pill.getBoundingClientRect();
+  var wr = wrap.getBoundingClientRect();
+  bar.style.left = (pr.left - wr.left + nav.scrollLeft) + 'px';
   bar.style.width = pill.offsetWidth + 'px';
   bar.style.background = pill.dataset.cb || 'var(--gold)';
 }
