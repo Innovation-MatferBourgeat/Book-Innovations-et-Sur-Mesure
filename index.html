@@ -269,6 +269,7 @@ function buildCat(tree) {
     var fname = parts[parts.length - 1];
     var isTxt = /\.txt$/i.test(dec(fname));
     if (!isImg(fname) && !isTxt) continue;
+    if (isTxt) console.log('[MB] TXT found: path='+node.path+' subDir='+subDir+' isVrDir='+isVrDir(subDir));
 
     var top = parts[1];
     var isSM = /sur.?mesure/i.test(top.replace(/^[0-9]+[_ ]?/, ''));
@@ -292,8 +293,8 @@ function buildCat(tree) {
     if (isCoverDir(subDir)) {
       if (!sec.cover) { sec.cover = rawUrl(node.path); console.log('[MB] COVER set for '+secName); }
     } else if (isVrDir(subDir)) {
-      // Store the txt file URL to fetch later
-      if (/\.txt$/i.test(fname)) sec.vrTxt = rawUrl(node.path);
+      console.log('[MB] VR dir detected for '+secName+', fname='+fname+', isTxt='+isTxt);
+      if (isTxt) { sec.vrTxt = rawUrl(node.path); console.log('[MB] VR TXT set for '+secName+': '+sec.vrTxt); }
     } else if (isImg(fname)) {
       if (!sec.subs[subName]) {
         sec.subs[subName] = [];
