@@ -460,6 +460,18 @@ function openSec(key) {
   document.getElementById('svt').textContent = curSec.secName;
   document.getElementById('fct').textContent = TX[LANG][curSec.isSM ? 'fs' : 'fi'];
   document.getElementById('fca').href = getLink(curSec);
+  // If vrTxt exists but vrUrl not yet fetched, fetch now then build
+  if (curSec.vrTxt && !curSec.vrUrl) {
+    console.log('[MB] Lazy fetching VR URL for', curSec.secName);
+    fetch(curSec.vrTxt).then(function(r) { return r.text(); }).then(function(txt) {
+      curSec.vrUrl = txt.trim();
+      console.log('[MB] Lazy VR URL:', curSec.vrUrl);
+      buildSubNav();
+      buildSlides();
+      goSlide(0, false);
+      requestAnimationFrame(function() { requestAnimationFrame(function() { setSlideSizes(); }); });
+    }).catch(function(e) { console.log('[MB] VR lazy fetch failed:', e); });
+  }
   buildSubNav();
   buildSlides();
   goSlide(0, false);
