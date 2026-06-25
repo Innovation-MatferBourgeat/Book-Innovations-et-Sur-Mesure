@@ -267,7 +267,8 @@ function buildCat(tree) {
     if (parts.length < 6) continue;
     if (parts[0] !== IMG_ROOT) continue;
     var fname = parts[parts.length - 1];
-    if (!isImg(fname)) continue;
+    var isTxt = /\.txt$/i.test(dec(fname));
+    if (!isImg(fname) && !isTxt) continue;
 
     var top = parts[1];
     var isSM = /sur.?mesure/i.test(top.replace(/^[0-9]+[_ ]?/, ''));
@@ -293,7 +294,7 @@ function buildCat(tree) {
     } else if (isVrDir(subDir)) {
       // Store the txt file URL to fetch later
       if (/\.txt$/i.test(fname)) sec.vrTxt = rawUrl(node.path);
-    } else {
+    } else if (isImg(fname)) {
       if (!sec.subs[subName]) {
         sec.subs[subName] = [];
         sec.subOrd[subName] = numKey(subDir);
