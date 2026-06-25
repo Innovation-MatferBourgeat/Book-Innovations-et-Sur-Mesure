@@ -71,8 +71,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sv-title{font:300 10px/1 var(--font-u);letter-spacing:.25em;text-transform:uppercase;color:var(--text);flex:1;text-align:center}
 .sv-hd-sp{width:32px;flex-shrink:0}
 .sub-wrap{flex-shrink:0;background:var(--bg2);border-bottom:.5px solid var(--border);position:relative}
-.sub-nav{display:flex;overflow-x:auto;scrollbar-width:none;padding:0 14px}
+.sub-nav{display:flex;overflow-x:auto;scrollbar-width:none;padding:0;scroll-padding-left:14px}
 .sub-nav::-webkit-scrollbar{display:none}
+.sub-pill:first-child{margin-left:14px}
+.sub-pill:last-child{margin-right:14px}
 .sub-pill{font:300 9px/1 var(--font-u);letter-spacing:.18em;text-transform:uppercase;color:var(--muted);padding:10px 14px 9px;white-space:nowrap;cursor:pointer;transition:color .25s;flex-shrink:0}
 .sub-pill.active{color:var(--pill-color,var(--gold-l))}
 .sub-bar{position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--gold);transition:left .3s var(--ease),width .3s var(--ease),background .3s;pointer-events:none;z-index:2}
@@ -510,12 +512,12 @@ function buildSubNav() {
     pill.addEventListener('click', function(idx) { return function() { goSlide(idx, true); }; }(j));
     nav.appendChild(pill);
   }
-  // Center pills when they fit, scroll from left when they overflow
   setTimeout(function() {
     var nav = document.getElementById('sn');
+    nav.scrollLeft = 0;
     nav.style.justifyContent = nav.scrollWidth <= nav.clientWidth ? 'center' : 'flex-start';
     updateSubBar(0);
-  }, 10);
+  }, 50);
 }
 
 function updateSubBar(idx) {
@@ -648,7 +650,11 @@ function goSlide(idx, animate) {
   document.getElementById('ar').classList.toggle('dis', idx === allSubs.length - 1);
   updateSubBar(idx);
   var ap = document.querySelector('.sub-pill.active');
-  if (ap) ap.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+  if (ap) {
+    var nav = document.getElementById('sn');
+    if (idx === 0) { nav.scrollLeft = 0; }
+    else { ap.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' }); }
+  }
 }
 function slideNav(dir) { goSlide(curSlide + dir, true); }
 
