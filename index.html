@@ -113,13 +113,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .vr-cta svg{width:22px;height:22px;stroke:var(--blue-l);fill:none;flex-shrink:0}
 .vr-cta-text{font:300 9px/1 var(--font-u);letter-spacing:.28em;text-transform:uppercase;color:var(--blue-l)}
 #vr-overlay{position:fixed;inset:0;z-index:200;background:#000;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .25s}
+#vr-overlay:not(.open) iframe{display:none}
 #vr-overlay.open{opacity:1;pointer-events:all}
 #vr-close{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;background:rgba(6,6,4,.65);border-radius:2px;border:.5px solid rgba(201,168,76,.3);transition:background .2s}
 #vr-close svg{width:18px;height:18px;stroke:var(--gold)}
 #vr-frame{flex:1;width:100%;border:none}
 </style>
 </head>
-<body>
+<body tabindex="-1">
 
 <div class="screen" id="loading">
   <img id="ll" src="" alt="Matfer Bourgeat">
@@ -712,9 +713,23 @@ function vrOpen(url) {
   document.getElementById('vr-overlay').classList.add('open');
 }
 function vrClose() {
-  document.getElementById('vr-overlay').classList.remove('open');
-  // Clear iframe to stop loading
-  setTimeout(function() { document.getElementById('vr-frame').src = ''; }, 300);
+  var overlay = document.getElementById('vr-overlay');
+  overlay.classList.remove('open');
+  // Remove iframe from DOM to fully release touch/pointer capture
+  var frame = document.getElementById('vr-frame');
+  frame.src = '';
+  // Blur focus out of iframe so touch events return to the app
+  if (document.activeElement && document.activeElement !== document.body) {
+    document.activeElement.blur();
+  }
+  // Force body to reclaim touch handling
+  document.body.focus();
+  // Re-enable touch on the slide outer in case it was captured
+  var svo = document.getElementById('svo');
+  if (svo) {
+    svo.style.pointerEvents = 'none';
+    setTimeout(function() { svo.style.pointerEvents = ''; }, 50);
+  }
 }
 function lbApply(anim) {
   if (!lbImgEl) return;
