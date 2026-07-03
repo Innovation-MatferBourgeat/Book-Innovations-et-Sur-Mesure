@@ -72,7 +72,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .sv-back svg{width:18px;height:18px;stroke:var(--gold)}
 .sv-title{font:300 10px/1 var(--font-u);letter-spacing:.25em;text-transform:uppercase;color:var(--text);flex:1;text-align:center}
 .sv-hd-sp{width:32px;flex-shrink:0}
-.sub-wrap{flex-shrink:0;background:var(--bg2);border-bottom:.5px solid var(--border);position:relative}
+.sub-wrap{flex-shrink:0;background:var(--bg2);border-bottom:.5px solid var(--border);position:relative;overflow:hidden}
 .sub-nav{display:flex;overflow-x:auto;scrollbar-width:none;padding:0;scroll-padding-left:14px}
 .sub-nav::-webkit-scrollbar{display:none}
 .sub-pill:first-child{margin-left:14px}
@@ -170,7 +170,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
   </div>
   <div class="sub-wrap">
-    <div class="sub-nav" id="sn"><div class="sub-bar" id="sb"></div></div>
+    <div class="sub-nav" id="sn"></div><div class="sub-bar" id="sb"></div>
   </div>
   <div class="sv-main">
     <div class="sv-outer" id="svo">
@@ -594,10 +594,13 @@ function updateSubBar(idx) {
   var bar = document.getElementById('sb');
   var pill = nav.querySelector('[data-si="' + idx + '"]');
   if (!pill || !bar) return;
-  // bar is inside sub-nav, so left is relative to sub-nav content (scrolls with it)
-  bar.style.left = pill.offsetLeft + 'px';
+  // bar is in sub-wrap (position:relative), pill.offsetLeft is in sub-nav
+  // visual left of pill on screen = pill.offsetLeft - nav.scrollLeft
+  var left = pill.offsetLeft - nav.scrollLeft;
+  bar.style.left = left + 'px';
   bar.style.width = pill.offsetWidth + 'px';
   bar.style.background = pill.dataset.cb || 'var(--gold)';
+  console.log('[BAR] idx='+idx+' offsetLeft='+pill.offsetLeft+' scrollLeft='+nav.scrollLeft+' => left='+left);
 }
 
 function buildSlides() {
