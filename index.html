@@ -718,12 +718,19 @@ function goSlide(idx, animate) {
   for (var j = 0; j < dots.length; j++) dots[j].classList.toggle('active', j === idx);
   document.getElementById('al').classList.toggle('dis', idx === 0);
   document.getElementById('ar').classList.toggle('dis', idx === allSubs.length - 1);
-  updateSubBar(idx);
   var ap = document.querySelector('.sub-pill.active');
   if (ap) {
     var nav = document.getElementById('sn');
-    if (idx === 0) { nav.scrollLeft = 0; }
-    else { ap.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' }); }
+    if (idx === 0) {
+      nav.scrollLeft = 0;
+      updateSubBar(idx);
+    } else {
+      ap.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+      // Wait for smooth scroll to complete before positioning the bar
+      setTimeout(function() { updateSubBar(idx); }, 350);
+    }
+  } else {
+    updateSubBar(idx);
   }
 }
 function slideNav(dir) { goSlide(curSlide + dir, true); }
