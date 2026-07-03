@@ -6,6 +6,8 @@
 <title>Matfer Bourgeat — Product Book</title>
 <meta name="application-name" content="MB Book">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MB Book">
 <meta name="theme-color" content="#060604">
@@ -217,6 +219,52 @@ var TX = {
   fr: { si:'Rechercher un produit…', ti:'Innovations', ts:'Sur Mesure', fi:'Infos produit', fs:'Notre page Sur Mesure', lh:'Double-tap pour réinitialiser le zoom' },
   en: { si:'Search a product…', ti:'Innovations', ts:'Bespoke', fi:'Product info', fs:'Our Bespoke page', lh:'Double-tap to reset zoom' }
 };
+var TRANS = {}; // { "fr text": "en text" }
+
+function t(text) {
+  if (!text) return text;
+  if (LANG === 'en' && TRANS[text]) return TRANS[text];
+  return text;
+}
+
+function parseTsv(tsv) {
+  var lines = tsv.split('\n');
+  var out = {};
+  for (var i = 1; i < lines.length; i++) {
+    var parts = lines[i].split('\t');
+    if (parts.length >= 2 && parts[0].trim()) out[parts[0].trim()] = parts[1].trim();
+  }
+  return out;
+}
+
+async function loadTranslations() {
+  var TRANS_KEY = 'mb_trans_v1';
+  var TRANS_TTL = 6 * 60 * 60 * 1000;
+  // Try cache first
+  try {
+    var cached = localStorage.getItem(TRANS_KEY);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      if (Date.now() - parsed.ts < TRANS_TTL) {
+        TRANS = parsed.data;
+        console.log('[MB] Translations from cache:', Object.keys(TRANS).length, 'entries');
+        return;
+      }
+    }
+  } catch(ec) {}
+  // Fetch fresh
+  try {
+    var r = await fetch(RAW + '/translations.tsv?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    var tsv = await r.text();
+    TRANS = parseTsv(tsv);
+    try {
+      localStorage.setItem(TRANS_KEY, JSON.stringify({ ts: Date.now(), data: TRANS }));
+    } catch(es) {}
+    console.log('[MB] Translations fetched & cached:', Object.keys(TRANS).length, 'entries');
+  } catch(e) { console.log('[MB] Translations fetch failed:', e); }
+}
+
 var INNOV_PAL = [{b:'var(--red)',l:'var(--red-l)'},{b:'var(--gold)',l:'var(--gold-l)'},{b:'var(--green)',l:'var(--green-l)'},{b:'var(--blue)',l:'var(--blue-l)'}];
 var SM_PAL    = [{b:'var(--blue)',l:'var(--blue-l)'},{b:'var(--gold)',l:'var(--gold-l)'},{b:'var(--green)',l:'var(--green-l)'},{b:'var(--red)',l:'var(--red-l)'}];
 
@@ -350,7 +398,7 @@ function renderGroups(panel, groups, isSM) {
     g.className = 'sec-group' + (isSM ? ' blue' : '');
     g.dataset.grp = grp;
     var gid = 'g' + grp.replace(/[^a-z0-9]/gi, '');
-    g.innerHTML = '<div class="sec-group-title">' + grp + '</div><div class="prod-grid" id="' + gid + '"></div>';
+    g.innerHTML = '<div class="sec-group-title">' + t(grp) + '</div><div class="prod-grid" id="' + gid + '"></div>';
     panel.appendChild(g);
     var secs = groups[grp];
     for (var i = 0; i < secs.length; i++) renderCard(secs[i], gid);
@@ -379,7 +427,7 @@ function renderCard(sec, gid) {
   }
   var lbl = document.createElement('div');
   lbl.className = 'prod-card-label';
-  lbl.innerHTML = '<div class="prod-card-name">' + sec.secName + '</div>';
+  lbl.innerHTML = '<div class="prod-card-name">' + t(sec.secName) + '</div>';
   card.appendChild(lbl);
   card.addEventListener('click', function(sk) { return function() { openSec(sk); }; }(sec.key));
   grid.appendChild(card);
@@ -432,6 +480,17 @@ function setLang(l) {
   document.getElementById('ts-l').textContent = tx.ts;
   document.getElementById('lbh').textContent = tx.lh;
   if (curSec) document.getElementById('fct').textContent = tx[curSec.isSM ? 'fs' : 'fi'];
+  // Rebuild home and section with new language
+  if (SECTIONS.length > 0) {
+    renderHome();
+    if (curSec) {
+      document.getElementById('svt').textContent = t(curSec.secName);
+      buildSubNav();
+      buildSlides();
+      goSlide(curSlide, false);
+      requestAnimationFrame(function() { requestAnimationFrame(function() { setSlideSizes(); }); });
+    }
+  }
 }
 
 function getLink(sec) {
@@ -460,7 +519,7 @@ function openSec(key) {
   var sv = document.getElementById('section-view');
   sv.classList.toggle('sv-blue', curSec.isSM);
   sv.style.setProperty('--dot-color', curSec.isSM ? 'var(--blue-l)' : 'var(--gold-l)');
-  document.getElementById('svt').textContent = curSec.secName;
+  document.getElementById('svt').textContent = t(curSec.secName);
   document.getElementById('fct').textContent = TX[LANG][curSec.isSM ? 'fs' : 'fi'];
   document.getElementById('fca').href = getLink(curSec);
   // If vrTxt exists but vrUrl not yet fetched, fetch now then build
@@ -505,7 +564,7 @@ function buildSubNav() {
     var col = getSubColor(curSec, j);
     var pill = document.createElement('div');
     pill.className = 'sub-pill' + (j === 0 ? ' active' : '');
-    pill.textContent = subs[j];
+    pill.textContent = t(subs[j]);
     pill.dataset.si = j;
     pill.dataset.cb = col.b;
     pill.dataset.cl = col.l;
@@ -523,19 +582,11 @@ function buildSubNav() {
 
 function updateSubBar(idx) {
   var nav = document.getElementById('sn');
-  var wrap = document.querySelector('.sub-wrap');
   var bar = document.getElementById('sb');
   var pill = nav.querySelector('[data-si="' + idx + '"]');
-  if (!pill || !bar || !wrap) return;
-  // pill.offsetLeft = distance from nav left edge (in DOM flow, ignoring scroll)
-  // nav.offsetLeft = distance of nav from sub-wrap left edge
-  // Together they give the bar position relative to sub-wrap
-  // For centered pills (scrollWidth < clientWidth), nav has auto margins —
-  // use getBCR of pill and sub-wrap to get the true visual position
-  var pillRect = pill.getBoundingClientRect();
-  var wrapRect = wrap.getBoundingClientRect();
-  // Add nav.scrollLeft to compensate for horizontal scroll offset
-  bar.style.left = (pillRect.left - wrapRect.left + nav.scrollLeft) + 'px';
+  if (!pill || !bar) return;
+  var left = pill.offsetLeft - nav.scrollLeft;
+  bar.style.left = left + 'px';
   bar.style.width = pill.offsetWidth + 'px';
   bar.style.background = pill.dataset.cb || 'var(--gold)';
 }
@@ -573,7 +624,7 @@ function buildSlides() {
         var tEl = document.createElement('div');
         tEl.className = 'sv-cap-title';
         tEl.style.color = col.l;
-        tEl.textContent = title;
+        tEl.textContent = t(title);
         cap.appendChild(tEl);
         block.appendChild(cap);
       }
@@ -595,18 +646,18 @@ function buildSlides() {
     var vrCta = document.createElement('a');
     vrCta.className = 'vr-cta';
     vrCta.href = '#';
-    vrCta.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg><span class="vr-cta-text">Visite 360°</span>';
+    vrCta.innerHTML = '<svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg><span class="vr-cta-text">' + (LANG === 'en' ? '360° Tour' : 'Visite 360°') + '</span>';
     vrCta.addEventListener('click', function(url) { return function(e) { e.preventDefault(); vrOpen(url); }; }(curSec.vrUrl));
     vrPanel.appendChild(vrCta);
     var vrLbl = document.createElement('div');
     vrLbl.style.cssText = 'font:300 9px/1 var(--font-u);letter-spacing:.25em;text-transform:uppercase;color:var(--muted)';
-    vrLbl.textContent = 'Appuyez pour lancer la visite';
+    vrLbl.textContent = LANG === 'en' ? 'Tap to start the tour' : 'Appuyez pour lancer la visite';
     vrPanel.appendChild(vrLbl);
     track.appendChild(vrPanel);
     // Add pill
     var vrPill = document.createElement('div');
     vrPill.className = 'sub-pill';
-    vrPill.textContent = 'Visite 360°';
+    vrPill.textContent = LANG === 'en' ? '360° Tour' : 'Visite 360°';
     vrPill.dataset.si = vrIdx;
     vrPill.dataset.cb = col.b;
     vrPill.dataset.cl = col.l;
@@ -812,7 +863,7 @@ async function init() {
   // Long press on home logo clears cache and reloads
   var logoEl = document.getElementById('hl');
   var lpTimer = null;
-  logoEl.addEventListener('touchstart', function() { lpTimer = setTimeout(function() { localStorage.removeItem('mb_tree_v1'); location.reload(); }, 1500); });
+  logoEl.addEventListener('touchstart', function() { lpTimer = setTimeout(function() { localStorage.removeItem('mb_tree_v1'); localStorage.removeItem('mb_trans_v1'); location.reload(); }, 1500); });
   logoEl.addEventListener('touchend', function() { clearTimeout(lpTimer); });
   try {
     var tree = null;
@@ -844,9 +895,11 @@ async function init() {
       } catch(es) { console.log('[MB] Cache write error:', es); }
     }
     try {
-      var lr = await fetch(RAW + '/liens.json');
+      var lr = await fetch(RAW + '/liens.json?t=' + Date.now(), { cache: 'no-store' });
       if (lr.ok) LINKS = await lr.json();
-    } catch(e2) {}
+      console.log('[MB] LINKS loaded:', Object.keys(LINKS));
+    } catch(e2) { console.log('[MB] LINKS fetch failed:', e2); }
+    await loadTranslations();
     SECTIONS = buildCat(tree);
     SECTIONS.forEach(function(s) { console.log('[MB] Section:', s.secName, '| cover:', s.cover ? 'YES' : 'NULL', '| subs:', Object.keys(s.subs)); });
     // Fetch VR URLs from txt files
