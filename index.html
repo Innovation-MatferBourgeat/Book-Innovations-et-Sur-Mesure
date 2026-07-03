@@ -121,6 +121,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #vr-close svg{width:18px;height:18px;stroke:var(--gold)}
 #vr-frame{flex:1;width:100%;border:none}
 </style>
+<script data-goatcounter="https://book-innovations-et-sur-mesure-gmb.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body tabindex="-1">
 
@@ -485,6 +486,10 @@ function setLang(l) {
     renderHome();
     if (curSec) {
       document.getElementById('svt').textContent = t(curSec.secName);
+  // Track section view
+  if (window.goatcounter && window.goatcounter.count) {
+    window.goatcounter.count({ path: '/section/' + curSec.secName, title: curSec.secName, event: true });
+  }
       buildSubNav();
       buildSlides();
       goSlide(curSlide, false);
@@ -520,6 +525,10 @@ function openSec(key) {
   sv.classList.toggle('sv-blue', curSec.isSM);
   sv.style.setProperty('--dot-color', curSec.isSM ? 'var(--blue-l)' : 'var(--gold-l)');
   document.getElementById('svt').textContent = t(curSec.secName);
+  // Track section view
+  if (window.goatcounter && window.goatcounter.count) {
+    window.goatcounter.count({ path: '/section/' + curSec.secName, title: curSec.secName, event: true });
+  }
   document.getElementById('fct').textContent = TX[LANG][curSec.isSM ? 'fs' : 'fi'];
   document.getElementById('fca').href = getLink(curSec);
   // If vrTxt exists but vrUrl not yet fetched, fetch now then build
