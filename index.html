@@ -723,15 +723,11 @@ function goSlide(idx, animate) {
     var nav = document.getElementById('sn');
     if (idx === 0) {
       nav.scrollLeft = 0;
-      updateSubBar(idx);
     } else {
-      ap.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
-      // Wait for smooth scroll to complete before positioning the bar
-      setTimeout(function() { updateSubBar(idx); }, 350);
+      ap.scrollIntoView({ inline: 'center', behavior: 'instant', block: 'nearest' });
     }
-  } else {
-    updateSubBar(idx);
   }
+  updateSubBar(idx);
 }
 function slideNav(dir) { goSlide(curSlide + dir, true); }
 
