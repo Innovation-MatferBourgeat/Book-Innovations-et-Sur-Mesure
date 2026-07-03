@@ -170,7 +170,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     </div>
   </div>
   <div class="sub-wrap">
-    <div class="sub-nav" id="sn"></div><div class="sub-bar" id="sb"></div>
+    <div class="sub-nav" id="sn"><div class="sub-bar" id="sb"></div></div>
   </div>
   <div class="sv-main">
     <div class="sv-outer" id="svo">
@@ -594,8 +594,8 @@ function updateSubBar(idx) {
   var bar = document.getElementById('sb');
   var pill = nav.querySelector('[data-si="' + idx + '"]');
   if (!pill || !bar) return;
-  var left = pill.offsetLeft - nav.scrollLeft;
-  bar.style.left = left + 'px';
+  // bar is inside sub-nav, so left is relative to sub-nav content (scrolls with it)
+  bar.style.left = pill.offsetLeft + 'px';
   bar.style.width = pill.offsetWidth + 'px';
   bar.style.background = pill.dataset.cb || 'var(--gold)';
 }
