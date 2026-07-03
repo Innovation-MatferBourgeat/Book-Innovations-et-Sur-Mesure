@@ -1,2 +1,2 @@
 - Faire le lien avec le catalogue digital ou le configurateur
-- Gérer la traduction
+- Gérer la traduction (fichier TSV à ouvrir dans Excel)
