@@ -120,13 +120,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #vr-close{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;background:rgba(6,6,4,.65);border-radius:2px;border:.5px solid rgba(201,168,76,.3);transition:background .2s}
 #vr-close svg{width:18px;height:18px;stroke:var(--gold)}
 #vr-frame{flex:1;width:100%;border:none}
-
-#install-toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);z-index:150;background:var(--surface);border:.5px solid rgba(201,168,76,.35);border-radius:4px;display:flex;align-items:center;gap:12px;padding:10px 16px;opacity:0;transition:transform .35s var(--ease),opacity .35s var(--ease);pointer-events:none;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.4)}
-#install-toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:all}
-#install-toast svg.ti{width:14px;height:14px;stroke:var(--gold);flex-shrink:0}
-#install-toast .tt{font:300 10px/1 var(--font-u);letter-spacing:.15em;text-transform:uppercase;color:var(--gold)}
-#install-toast .tc{width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.5;margin-left:4px;flex-shrink:0}
-#install-toast .tc svg{width:11px;height:11px;stroke:var(--text)}
 </style>
 <script data-goatcounter="https://book-innovations-et-sur-mesure-gmb.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -201,11 +194,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <div class="lb-hint" id="lbh">Double-tap pour réinitialiser le zoom</div>
 </div>
 
-<div id="install-toast">
-  <svg class="ti" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
-  <span class="tt" id="toast-text">Installer l'app</span>
-  <div class="tc" id="toast-close"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
-</div>
 <div id="vr-overlay">
   <div id="vr-close" onclick="vrClose()">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -227,51 +215,6 @@ var LINKS = {};
 var curSec = null, curSlide = 0, allSubs = [];
 var lbScale = 1, lbX = 0, lbY = 0, lbImgEl = null;
 var swipeInit = false;
-var installPrompt = null;
-
-var toastTimer = null;
-
-function showInstallToast() {
-  var toast = document.getElementById('install-toast');
-  if (!toast || !installPrompt) return;
-  toast.classList.add('show');
-  toastTimer = setTimeout(hideInstallToast, 6000);
-}
-
-function hideInstallToast() {
-  clearTimeout(toastTimer);
-  var toast = document.getElementById('install-toast');
-  if (toast) toast.classList.remove('show');
-}
-
-function installApp() {
-  if (!installPrompt) return;
-  hideInstallToast();
-  installPrompt.prompt();
-  installPrompt.userChoice.then(function(result) {
-    console.log('[MB] Install choice:', result.outcome);
-    installPrompt = null;
-  });
-}
-
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  installPrompt = e;
-  setTimeout(showInstallToast, 3000);
-  console.log('[MB] Install prompt ready');
-});
-
-window.addEventListener('appinstalled', function() {
-  installPrompt = null;
-  hideInstallToast();
-});
-
-document.addEventListener('click', function(e) {
-  var toast = document.getElementById('install-toast');
-  if (!toast || !toast.classList.contains('show')) return;
-  if (e.target.closest('.tc')) { hideInstallToast(); return; }
-  if (e.target.closest('#install-toast')) installApp();
-});
 
 var TX = {
   fr: { si:'Rechercher un produit…', ti:'Innovations', ts:'Sur Mesure', fi:'Infos produit', fs:'Notre page Sur Mesure', lh:'Double-tap pour réinitialiser le zoom' },
@@ -538,8 +481,6 @@ function setLang(l) {
   document.getElementById('ts-l').textContent = tx.ts;
   document.getElementById('lbh').textContent = tx.lh;
   if (curSec) document.getElementById('fct').textContent = tx[curSec.isSM ? 'fs' : 'fi'];
-  var tt = document.getElementById('toast-text');
-  if (tt) tt.textContent = l === 'en' ? 'Install app' : "Installer l'app";
   // Rebuild home and section with new language
   if (SECTIONS.length > 0) {
     renderHome();
