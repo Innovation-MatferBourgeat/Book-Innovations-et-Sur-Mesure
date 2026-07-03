@@ -721,11 +721,9 @@ function goSlide(idx, animate) {
   var ap = document.querySelector('.sub-pill.active');
   if (ap) {
     var nav = document.getElementById('sn');
-    if (idx === 0) {
-      nav.scrollLeft = 0;
-    } else {
-      ap.scrollIntoView({ inline: 'center', behavior: 'instant', block: 'nearest' });
-    }
+    // Scroll nav so active pill is centered — direct scrollLeft assignment (instant, no animation)
+    var targetScroll = ap.offsetLeft - (nav.clientWidth / 2) + (ap.offsetWidth / 2);
+    nav.scrollLeft = Math.max(0, targetScroll);
   }
   updateSubBar(idx);
 }
