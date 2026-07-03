@@ -523,13 +523,12 @@ function buildSubNav() {
 
 function updateSubBar(idx) {
   var nav = document.getElementById('sn');
-  var wrap = document.querySelector('.sub-wrap');
   var bar = document.getElementById('sb');
   var pill = nav.querySelector('[data-si="' + idx + '"]');
-  if (!pill || !bar || !wrap) return;
-  var pr = pill.getBoundingClientRect();
-  var wr = wrap.getBoundingClientRect();
-  bar.style.left = (pr.left - wr.left + nav.scrollLeft) + 'px';
+  if (!pill || !bar) return;
+  // offsetLeft = position in DOM flow relative to nav
+  // subtract nav's own left margin/padding offset, add nav's position in sub-wrap
+  bar.style.left = (nav.offsetLeft + pill.offsetLeft) + 'px';
   bar.style.width = pill.offsetWidth + 'px';
   bar.style.background = pill.dataset.cb || 'var(--gold)';
 }
@@ -706,7 +705,24 @@ function lbOpen(url) {
   setTimeout(function() { hint.style.opacity = '0'; }, 2800);
   lbGestures();
 }
-function lbClose() { document.getElementById('lightbox').classList.remove('open'); }
+function lbClose() {
+  document.getElementById('lightbox').classList.remove('open');
+  // Reset zoom state
+  lbScale = 1; lbX = 0; lbY = 0; lbImgEl = null;
+  // Clear all touch handlers on the wrap to stop them capturing events
+  var wrap = document.getElementById('lbw');
+  wrap.ontouchstart = null;
+  wrap.ontouchmove = null;
+  wrap.ontouchend = null;
+  wrap.onwheel = null;
+  wrap.ondblclick = null;
+  // Re-enable touch on slides
+  var svo = document.getElementById('svo');
+  if (svo) {
+    svo.style.pointerEvents = 'none';
+    setTimeout(function() { svo.style.pointerEvents = ''; }, 30);
+  }
+}
 function vrOpen(url) {
   var frame = document.getElementById('vr-frame');
   frame.src = url;
@@ -786,15 +802,45 @@ document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { lbC
 async function init() {
   var logos = ['ll','hl','sl'];
   for (var i = 0; i < logos.length; i++) document.getElementById(logos[i]).src = LOGO;
+  // Long press on home logo clears cache and reloads
+  var logoEl = document.getElementById('hl');
+  var lpTimer = null;
+  logoEl.addEventListener('touchstart', function() { lpTimer = setTimeout(function() { localStorage.removeItem('mb_tree_v1'); location.reload(); }, 1500); });
+  logoEl.addEventListener('touchend', function() { clearTimeout(lpTimer); });
   try {
-    var r = await fetch(API + '/git/trees/' + BRANCH + '?recursive=1', { headers: { Accept: 'application/vnd.github.v3+json' } });
-    if (!r.ok) throw new Error('GitHub API ' + r.status);
-    var data = await r.json();
+    var tree = null;
+    var CACHE_KEY = 'mb_tree_v1';
+    var CACHE_TTL = 6 * 60 * 60 * 1000;
+    // Try localStorage cache first
+    try {
+      var cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        var parsed = JSON.parse(cached);
+        if (Date.now() - parsed.ts < CACHE_TTL) {
+          tree = parsed.tree;
+          console.log('[MB] Using cached tree (' + parsed.tree.length + ' nodes, age: ' + Math.round((Date.now()-parsed.ts)/60000) + 'min)');
+        } else {
+          console.log('[MB] Cache expired, refetching...');
+        }
+      }
+    } catch(ec) { console.log('[MB] Cache read error:', ec); }
+    // Fetch from GitHub if no valid cache
+    if (!tree) {
+      var r = await fetch(API + '/git/trees/' + BRANCH + '?recursive=1', { headers: { Accept: 'application/vnd.github.v3+json' } });
+      if (!r.ok) throw new Error('GitHub API ' + r.status);
+      var data = await r.json();
+      tree = data.tree;
+      // Store in localStorage
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), tree: tree }));
+        console.log('[MB] Tree cached (' + tree.length + ' nodes)');
+      } catch(es) { console.log('[MB] Cache write error:', es); }
+    }
     try {
       var lr = await fetch(RAW + '/liens.json');
       if (lr.ok) LINKS = await lr.json();
     } catch(e2) {}
-    SECTIONS = buildCat(data.tree);
+    SECTIONS = buildCat(tree);
     SECTIONS.forEach(function(s) { console.log('[MB] Section:', s.secName, '| cover:', s.cover ? 'YES' : 'NULL', '| subs:', Object.keys(s.subs)); });
     // Fetch VR URLs from txt files
     var vrFetches = SECTIONS.filter(function(s) { return s.vrTxt; }).map(function(s) {
