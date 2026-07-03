@@ -1,0 +1,2 @@
+- Faire le lien avec le catalogue digital ou le configurateur
+- Gérer la traduction
