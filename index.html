@@ -523,12 +523,19 @@ function buildSubNav() {
 
 function updateSubBar(idx) {
   var nav = document.getElementById('sn');
+  var wrap = document.querySelector('.sub-wrap');
   var bar = document.getElementById('sb');
   var pill = nav.querySelector('[data-si="' + idx + '"]');
-  if (!pill || !bar) return;
-  // offsetLeft = position in DOM flow relative to nav
-  // subtract nav's own left margin/padding offset, add nav's position in sub-wrap
-  bar.style.left = (nav.offsetLeft + pill.offsetLeft) + 'px';
+  if (!pill || !bar || !wrap) return;
+  // pill.offsetLeft = distance from nav left edge (in DOM flow, ignoring scroll)
+  // nav.offsetLeft = distance of nav from sub-wrap left edge
+  // Together they give the bar position relative to sub-wrap
+  // For centered pills (scrollWidth < clientWidth), nav has auto margins —
+  // use getBCR of pill and sub-wrap to get the true visual position
+  var pillRect = pill.getBoundingClientRect();
+  var wrapRect = wrap.getBoundingClientRect();
+  // Add nav.scrollLeft to compensate for horizontal scroll offset
+  bar.style.left = (pillRect.left - wrapRect.left + nav.scrollLeft) + 'px';
   bar.style.width = pill.offsetWidth + 'px';
   bar.style.background = pill.dataset.cb || 'var(--gold)';
 }
