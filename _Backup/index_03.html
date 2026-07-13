@@ -121,13 +121,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #vr-close svg{width:18px;height:18px;stroke:var(--gold)}
 #vr-frame{flex:1;width:100%;border:none}
 
-#safari-toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);z-index:150;background:var(--surface);border:.5px solid rgba(91,143,191,.4);border-radius:4px;display:flex;align-items:flex-start;gap:10px;padding:10px 14px;opacity:0;transition:transform .35s var(--ease),opacity .35s var(--ease);pointer-events:none;max-width:280px;box-shadow:0 4px 24px rgba(0,0,0,.4)}
-#safari-toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:all}
-#safari-toast .st-icon{font-size:18px;flex-shrink:0;margin-top:1px}
-#safari-toast .st-body{display:flex;flex-direction:column;gap:3px}
-#safari-toast .st-title{font:300 9px/1 var(--font-u);letter-spacing:.15em;text-transform:uppercase;color:var(--blue-l)}
-#safari-toast .st-text{font:300 10px/1.4 var(--font-u);color:var(--muted)}
-#safari-toast .st-close{position:absolute;top:6px;right:8px;font-size:14px;color:var(--muted);cursor:pointer;line-height:1}
 #install-toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(80px);z-index:150;background:var(--surface);border:.5px solid rgba(201,168,76,.35);border-radius:4px;display:flex;align-items:center;gap:12px;padding:10px 16px;opacity:0;transition:transform .35s var(--ease),opacity .35s var(--ease);pointer-events:none;white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,.4)}
 #install-toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:all}
 #install-toast svg.ti{width:14px;height:14px;stroke:var(--gold);flex-shrink:0}
@@ -208,14 +201,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   <div class="lb-hint" id="lbh">Double-tap pour réinitialiser le zoom</div>
 </div>
 
-<div id="safari-toast">
-  <span class="st-icon">□↑</span>
-  <div class="st-body">
-    <span class="st-title">Installer l'app</span>
-    <span class="st-text" id="safari-toast-text">Appuyez sur <strong>□↑</strong> puis<br>"Sur l'écran d'accueil"</span>
-  </div>
-  <span class="st-close" onclick="safariToastClose()">✕</span>
-</div>
 <div id="install-toast">
   <svg class="ti" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12-4-4m4 4 4-4M2 17l.621 2.485A2 2 0 0 0 4.561 21h14.878a2 2 0 0 0 1.94-1.515L22 17"/></svg>
   <span class="tt" id="toast-text">Installer l'app</span>
@@ -245,35 +230,6 @@ var swipeInit = false;
 var installPrompt = null;
 
 var toastTimer = null;
-var safariToastTimer = null;
-
-function isSafariIOS() {
-  var ua = navigator.userAgent;
-  // Safari on iOS: contains 'Safari' but not 'Chrome', and is on iOS
-  var isIOS = /iphone|ipad|ipod/i.test(ua);
-  var isSafari = /safari/i.test(ua) && !/chrome|crios|fxios/i.test(ua);
-  // Also check standalone mode — already installed
-  var isStandalone = window.navigator.standalone === true;
-  return isIOS && isSafari && !isStandalone;
-}
-
-function showSafariToast() {
-  // Only show once per session
-  if (sessionStorage.getItem('safari_toast_shown')) return;
-  var toast = document.getElementById('safari-toast');
-  if (!toast) return;
-  setTimeout(function() {
-    toast.classList.add('show');
-    sessionStorage.setItem('safari_toast_shown', '1');
-    safariToastTimer = setTimeout(safariToastClose, 8000);
-  }, 3000);
-}
-
-function safariToastClose() {
-  clearTimeout(safariToastTimer);
-  var toast = document.getElementById('safari-toast');
-  if (toast) toast.classList.remove('show');
-}
 
 function showInstallToast() {
   var toast = document.getElementById('install-toast');
@@ -584,12 +540,6 @@ function setLang(l) {
   if (curSec) document.getElementById('fct').textContent = tx[curSec.isSM ? 'fs' : 'fi'];
   var tt = document.getElementById('toast-text');
   if (tt) tt.textContent = l === 'en' ? 'Install app' : "Installer l'app";
-  var stt = document.getElementById('safari-toast-text');
-  if (stt) stt.innerHTML = l === 'en'
-    ? 'Tap <strong>□↑</strong> then<br>"Add to Home Screen"'
-    : 'Appuyez sur <strong>□↑</strong> puis<br>"Sur l\'écran d\'accueil"';
-  var stitle = document.querySelector('#safari-toast .st-title');
-  if (stitle) stitle.textContent = l === 'en' ? 'Install app' : "Installer l'app";
   // Rebuild home and section with new language
   if (SECTIONS.length > 0) {
     renderHome();
@@ -1037,7 +987,6 @@ async function init() {
     document.getElementById('loading').classList.add('hidden');
     document.getElementById('home').classList.remove('hidden');
     setTimeout(function() { updateTabBar('i'); }, 50);
-  if (isSafariIOS()) showSafariToast();
   window.addEventListener('resize', function() {
     if (curSec) setSlideSizes();
   });
